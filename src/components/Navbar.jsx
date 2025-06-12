@@ -20,12 +20,12 @@ export default function Navbar() {
         <Link href="/" className="flex items-center">
           <div className="relative h-10 w-36">
             <Image
-              src="/logo9.png"
+              src="/logo7.png"
               alt="Education+ Logo"
               
               className="object-contain"
-              width={90}
-              height={90}
+              width={80}
+              height={80}
               priority
             />
           </div>
@@ -33,7 +33,7 @@ export default function Navbar() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex md:items-center">
-          <ul className="flex gap-5">
+          <ul className="flex gap-8">
             {navItems.map((page, index) => (
               <li key={index}>
                 <Link href={page.href} className="text-gray-300 hover:text-yellow-400 transition">

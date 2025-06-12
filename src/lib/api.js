@@ -1,10 +1,10 @@
 // lib/api.js
 export class ApiClient {
     constructor() {
-      this.baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
     }
     
-    async sendMessage(content, chatId = null, aiProvider = null, model = null, systemContext = undefined, feature = null, subFeature = null) {
+    async sendMessage(content, chatId = null, aiProvider = null, model = null) {
       const token = localStorage.getItem('token');
       
       if (!token) {
@@ -22,10 +22,7 @@ export class ApiClient {
             content,
             chatId,
             aiProvider,
-            model,
-            systemContext,
-            feature,        // e.g., 'study-tools', 'writing-help', 'code-generator'
-            subFeature      // e.g., 'flashcards', 'notes', 'summarizer'
+            model
           })
         });
         
@@ -144,123 +141,6 @@ export class ApiClient {
           throw new Error(errorData.message || 'Failed to update chat category');
         }
         
-        return await response.json();
-      } catch (error) {
-        console.error('API error:', error);
-        throw error;
-      }
-    }
-    
-    // Add method to get chat history by feature
-    async getChatsByFeature(feature, subFeature = null, page = 1, limit = 10) {
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-      
-      try {
-        const params = new URLSearchParams({ 
-          feature,
-          page: page.toString(),
-          limit: limit.toString()
-        });
-        if (subFeature) params.append('subFeature', subFeature);
-        
-        const response = await fetch(`${this.baseUrl}/chat/chat-history?${params}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to fetch chat history');
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('API error:', error);
-        throw error;
-      }
-    }
-
-    // EPlus Balance and Rewards
-    async getEPlusBalance() {
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      try {
-        const response = await fetch(`${this.baseUrl}/eplus/balance`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to fetch EPlus balance');
-        }
-
-        return await response.json();
-      } catch (error) {
-        console.error('API error:', error);
-        throw error;
-      }
-    }
-
-    async getRewardStats() {
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      try {
-        const response = await fetch(`${this.baseUrl}/eplus/stats`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to fetch reward stats');
-        }
-
-        return await response.json();
-      } catch (error) {
-        console.error('API error:', error);
-        throw error;
-      }
-    }
-
-    async processDailyLogin() {
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      try {
-        const response = await fetch(`${this.baseUrl}/eplus/daily-login`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to process daily login');
-        }
-
         return await response.json();
       } catch (error) {
         console.error('API error:', error);

@@ -4,18 +4,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { PlusCircle, Code, Award, BookOpen, ListChecks, Brain, GraduationCap, Wallet } from 'lucide-react';
-import WalletModal from '@/components/ui/WalletModal';
-import LazyEPlusWidget from '@/components/ui/LazyEPlusWidget';
-import RewardNotificationContainer from '@/components/ui/RewardNotificationContainer';
-import ePlusService from '@/lib/ePlusService';
+import { PlusCircle, Clock, Award, BookOpen, ListChecks, Brain, GraduationCap, Wallet } from 'lucide-react';
 
 export default function DashboardHomePage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [walletConnected, setWalletConnected] = useState(false);
-  const [showWalletModal, setShowWalletModal] = useState(false);
   const [totalRewards, setTotalRewards] = useState(0);
   const [stats, setStats] = useState({
     tasksCompleted: 0,
@@ -26,16 +20,7 @@ export default function DashboardHomePage() {
   const [recentActivity, setRecentActivity] = useState([]);
   const [upcomingTasks, setUpcomingTasks] = useState([]);
   
-  // New EPlus state
-  const [ePlusData, setEPlusData] = useState({
-    balance: 0,
-    rewardHistory: [],
-    dailyStreak: { current: 0, longest: 0 },
-    stats: {}
-  });
-  const [lastLoginProcessed, setLastLoginProcessed] = useState(false);
-
-  // Check for authentication and wallet connection
+  // Check for authentication
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
@@ -46,31 +31,13 @@ export default function DashboardHomePage() {
     }
     
     if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      
-      // Check if wallet is connected from user data
-      if (parsedUser.solanaWallet && parsedUser.walletVerified) {
-        setWalletConnected(true);
-      }
-      
-      // Set total rewards from user's EPlus claim or activity metrics
-      if (parsedUser.ePlusClaim && parsedUser.ePlusClaim.claimedAmount) {
-        setTotalRewards(parsedUser.ePlusClaim.claimedAmount);
-      }
+      setUser(JSON.parse(userData));
     }
     
     // Load stats and activities
     loadUserData();
-    
-    // Load EPlus data
-    loadEPlusData();
-    
-    // Process daily login
-    processDailyLogin();
   }, [router]);
-
-  // Load user data for stats and activities
+  
   const loadUserData = () => {
     // Get tasks from localStorage
     const savedTasks = localStorage.getItem('eduTasks');
@@ -90,11 +57,9 @@ export default function DashboardHomePage() {
       writingProjects: Math.floor(Math.random() * 5) + 1 // Placeholder for writing projects
     });
     
-    // Generate total rewards based on activity if not set from user data
-    if (!user?.ePlusClaim?.claimedAmount) {
-      const calculatedRewards = completedTasks * 5 + examSessions.length * 8;
-      setTotalRewards(calculatedRewards);
-    }
+    // Generate total rewards based on activity (placeholder for actual reward calculation)
+    const calculatedRewards = completedTasks * 5 + examSessions.length * 8;
+    setTotalRewards(calculatedRewards);
     
     // Set upcoming tasks (tasks not completed)
     const pendingTasks = tasks
@@ -130,69 +95,9 @@ export default function DashboardHomePage() {
     setRecentActivity(allActivities);
   };
   
-  // Load EPlus data
-  const loadEPlusData = async () => {
-    try {
-      const data = await ePlusService.getBalance();
-      setEPlusData(data);
-      setTotalRewards(data.balance);
-    } catch (error) {
-      console.error('Failed to load EPlus data:', error);
-    }
-  };
-
-  // Process daily login
-  const processDailyLogin = async () => {
-    const today = new Date().toDateString();
-    const lastProcessed = localStorage.getItem('lastDailyLoginProcessed');
-    
-    if (lastProcessed !== today) {
-      try {
-        const result = await ePlusService.processDailyLogin();
-        if (result) {
-          localStorage.setItem('lastDailyLoginProcessed', today);
-          setLastLoginProcessed(true);
-          // Reload EPlus data to reflect new balance
-          setTimeout(loadEPlusData, 1000);
-        }
-      } catch (error) {
-        console.error('Failed to process daily login:', error);
-      }
-    }
-  };
-
   const handleConnectWallet = () => {
-    setShowWalletModal(true);
-  };
-
-  const handleWalletConnected = (address) => {
-    // Update user data with new wallet
-    const updatedUser = { 
-      ...user, 
-      solanaWallet: address, 
-      walletVerified: true 
-    };
-    setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    // Placeholder for wallet connection functionality
     setWalletConnected(true);
-    setShowWalletModal(false);
-  };
-
-  const handleRewardsClick = () => {
-    if (walletConnected) {
-      router.push('/dashboard/rewards');
-    } else {
-      setShowWalletModal(true);
-    }
-  };
-
-  const handleEPlusClick = () => {
-    router.push('/dashboard/rewards');
-  };
-
-  const formatAddress = (address) => {
-    if (!address) return '';
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
   
   const formatDate = (dateString) => {
@@ -253,25 +158,11 @@ export default function DashboardHomePage() {
     },
     {
       title: 'Study Tools',
-      description: 'Flashcards, notes, summaries, and mind maps',
+      description: 'Create flashcards, notes, and summaries',
       icon: <Brain size={24} />,
       color: 'bg-purple-100 text-purple-600',
-      submenu: [
-        { name: 'Flashcard Generator', link: '/dashboard/study-tools?tool=flashcards', icon: '📇' },
-        { name: 'Note Organizer', link: '/dashboard/study-tools?tool=notes', icon: '📝' },
-        { name: 'Content Summarizer', link: '/dashboard/study-tools?tool=summarizer', icon: '📄' },
-        { name: 'Mind Map Creator', link: '/dashboard/study-tools?tool=mindmap', icon: '🗺️' },
-        { name: 'Concept Explainer', link: '/dashboard/study-tools?tool=explain', icon: '💡' }
-      ],
+      link: '/dashboard/study-tools',
       stat: `${stats.studyHours} study hours`
-    },
-    {
-      title: 'Code Generator',
-      description: 'Generate code with implementation steps',
-      icon: <Code size={24} />,
-      color: 'bg-slate-100 text-slate-600',
-      link: '/dashboard/code-generator',
-      stat: 'AI-powered coding'
     },
     {
       title: 'Exam Prep',
@@ -285,152 +176,89 @@ export default function DashboardHomePage() {
   
   return (
     <div className="flex-1 overflow-auto bg-gray-50 p-6">
-      {/* Reward Notifications */}
-      <RewardNotificationContainer />
-      
-      {/* Welcome section - Modified layout */}
-      <div className="mb-6">
-        {/* Welcome message */}
-        <div className="mb-4">
-          <motion.h1 
-            className="text-2xl font-bold text-gray-800"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+      {/* Welcome section with quick stats */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
             Welcome back, {user?.name || 'Student'}!
-          </motion.h1>
+          </h1>
           <p className="text-gray-600 mt-1">
             Track your progress and access your learning tools
           </p>
         </div>
         
-        {/* EPlus Widget - Full width on desktop with lazy loading */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="w-full"
-        >
-          <LazyEPlusWidget
-            balance={ePlusData.balance}
-            dailyStreak={ePlusData.dailyStreak}
-            recentRewards={ePlusData.rewardHistory}
-            onClick={handleEPlusClick}
-          />
-        </motion.div>
+        {/* Rewards section */}
+        <div className="mt-4 md:mt-0 bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center space-x-4">
+          <div className="bg-indigo-100 p-3 rounded-lg">
+            <Award className="h-6 w-6 text-indigo-600" />
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Total Rewards</p>
+            <div className="flex items-center">
+              <span className="text-xl font-bold text-gray-800">{totalRewards}</span>
+              <span className="ml-1 text-sm font-medium text-indigo-600">EDU</span>
+            </div>
+          </div>
+          {!walletConnected ? (
+            <button 
+              onClick={handleConnectWallet}
+              className="ml-2 px-3 py-1 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 flex items-center"
+            >
+              <Wallet size={14} className="mr-1" />
+              Connect
+            </button>
+          ) : (
+            <span className="ml-2 px-3 py-1 bg-green-100 text-green-700 text-sm rounded-lg flex items-center">
+              <Wallet size={14} className="mr-1" />
+              Connected
+            </span>
+          )}
+        </div>
       </div>
-
+      
       {/* Quick action buttons */}
-      <motion.div 
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {quickActions.map((action, index) => (
           <Link 
             key={index} 
             href={action.link}
-            className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-center space-x-2 hover:bg-gray-50 transition-all duration-200 hover:shadow-md"
-            onClick={() => {
-              // Simulate reward for quick actions
-              ePlusService.simulateReward('ai_usage', { 
-                newBalance: ePlusData.balance + 0.02 
-              });
-            }}
+            className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-center space-x-2 hover:bg-gray-50 transition"
           >
             <div className={`${action.color} p-2 rounded-lg text-white`}>
               {action.icon}
             </div>
-            <span className="font-medium text-sm">{action.name}</span>
+            <span className="font-medium">{action.name}</span>
           </Link>
         ))}
-      </motion.div>
-
-      {/* Main content grid */}
+      </div>
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left side - Tools (takes 2/3 of the space on large screens) */}
-        <div className="lg:col-span-2">
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            {toolCards.map((card, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + index * 0.1 }}
-              >
-                {card.submenu ? (
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                    <div className="flex items-center mb-4">
-                      <div className={`${card.color} p-3 rounded-lg`}>
-                        {card.icon}
-                      </div>
-                      <div className="ml-4">
-                        <h3 className="font-medium text-gray-800">{card.title}</h3>
-                        <p className="text-sm text-gray-600">{card.description}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-2">
-                      {card.submenu.map((item, subIndex) => (
-                        <Link 
-                          key={subIndex} 
-                          href={item.link}
-                          className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
-                          onClick={() => {
-                            ePlusService.simulateReward('ai_usage');
-                          }}
-                        >
-                          <span className="text-lg mr-3">{item.icon}</span>
-                          <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                            {item.name}
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                    
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <span className="text-sm font-medium text-gray-700">{card.stat}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <Link href={card.link} className="block">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all group">
-                      <div className="flex items-center mb-4">
-                        <div className={`${card.color} p-3 rounded-lg group-hover:scale-110 transition-transform`}>
-                          {card.icon}
-                        </div>
-                        <div className="ml-4">
-                          <h3 className="font-medium text-gray-800">{card.title}</h3>
-                          <p className="text-sm text-gray-600">{card.description}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-auto pt-4 border-t border-gray-100">
-                        <span className="text-sm font-medium text-gray-700">{card.stat}</span>
-                      </div>
-                    </div>
-                  </Link>
-                )}
-              </motion.div>
-            ))}
-          </motion.div>
+        {/* Main tools grid - takes 2/3 of the space on large screens */}
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {toolCards.map((card, index) => (
+            <Link
+              key={index}
+              href={card.link}
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col hover:shadow-md transition"
+            >
+              <div className="flex items-center mb-4">
+                <div className={`p-3 rounded-lg ${card.color}`}>
+                  {card.icon}
+                </div>
+                <h3 className="ml-3 text-lg font-medium">{card.title}</h3>
+              </div>
+              <p className="text-gray-600 mb-4">{card.description}</p>
+              <div className="mt-auto pt-4 border-t border-gray-100">
+                <span className="text-sm font-medium text-gray-700">{card.stat}</span>
+              </div>
+            </Link>
+          ))}
         </div>
         
         {/* Right sidebar - takes 1/3 of the space on large screens */}
         <div className="space-y-6">
           {/* Upcoming tasks */}
-          <motion.div 
-            className="bg-white p-5 rounded-xl shadow-sm border border-gray-200"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
-          >
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium text-gray-800">Upcoming Tasks</h3>
               <Link href="/dashboard/task-manager" className="text-indigo-600 text-sm hover:text-indigo-800">
@@ -459,15 +287,10 @@ export default function DashboardHomePage() {
                 <p>No upcoming tasks</p>
               </div>
             )}
-          </motion.div>
+          </div>
           
           {/* Recent activity */}
-          <motion.div 
-            className="bg-white p-5 rounded-xl shadow-sm border border-gray-200"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6 }}
-          >
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
             <h3 className="font-medium text-gray-800 mb-4">Recent Activity</h3>
             
             {recentActivity.length > 0 ? (
@@ -507,16 +330,48 @@ export default function DashboardHomePage() {
                 <p>No recent activity</p>
               </div>
             )}
-          </motion.div>
+          </div>
+          
+          {/* Rewards section */}
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-5 rounded-xl shadow-sm text-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium">Learning Rewards</h3>
+              <Award className="h-5 w-5" />
+            </div>
+            <p className="text-sm text-indigo-100 mb-3">
+              Earn EDU tokens by completing learning tasks and reaching your goals
+            </p>
+            <div className="mb-4">
+              <div className="flex justify-between text-xs mb-1">
+                <span>Progress to next reward</span>
+                <span>75%</span>
+              </div>
+              <div className="w-full bg-indigo-200 rounded-full h-2">
+                <div className="bg-white h-2 rounded-full" style={{ width: '75%' }}></div>
+              </div>
+            </div>
+            {!walletConnected ? (
+              <button 
+                onClick={handleConnectWallet}
+                className="w-full py-2 bg-white text-indigo-600 font-medium rounded-lg hover:bg-indigo-50 transition flex items-center justify-center"
+              >
+                <Wallet size={16} className="mr-2" />
+                Connect Wallet to Claim
+              </button>
+            ) : (
+              <div className="flex justify-between items-center bg-indigo-600 p-3 rounded-lg">
+                <div>
+                  <p className="text-sm text-indigo-200">Available to claim</p>
+                  <p className="text-xl font-bold">{totalRewards} EDU</p>
+                </div>
+                <button className="px-3 py-1 bg-white text-indigo-600 rounded-lg text-sm font-medium">
+                  Claim
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Wallet Modal */}
-      <WalletModal 
-        isOpen={showWalletModal}
-        onClose={() => setShowWalletModal(false)}
-        onWalletConnected={handleWalletConnected}
-      />
     </div>
   );
 }
